@@ -20,7 +20,7 @@ import shutil
 
 import torch
 from accelerate import Accelerator
-from dataset import TTSDataset
+from dataset import TTSDataset, encode_reference_mels
 from qwen_tts.inference.qwen3_tts_model import Qwen3TTSModel
 from safetensors.torch import save_file
 from torch.optim import AdamW
@@ -79,7 +79,9 @@ def train():
                 codec_0_labels = batch['codec_0_labels']
                 codec_mask = batch['codec_mask']
 
-                speaker_embedding = model.speaker_encoder(ref_mels.to(model.device).to(model.dtype)).detach()
+                speaker_embedding = encode_reference_mels(
+                    model.speaker_encoder, ref_mels, model.device, model.dtype
+                )
                 if target_speaker_embedding is None:
                     target_speaker_embedding = speaker_embedding
 

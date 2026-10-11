@@ -30,6 +30,15 @@ AudioLike = Union[
 
 MaybeList = Union[Any, List[Any]]
 
+
+def encode_reference_mels(speaker_encoder, ref_mels, device, dtype):
+    if isinstance(ref_mels, torch.Tensor):
+        return speaker_encoder(ref_mels.to(device).to(dtype)).detach()
+    return torch.cat(
+        [speaker_encoder(mel.to(device).to(dtype)) for mel in ref_mels], dim=0
+    ).detach()
+
+
 class TTSDataset(Dataset):
     def __init__(self, data_list, processor, config:Qwen3TTSConfig, lag_num = -1):
         self.data_list = data_list
@@ -204,7 +213,8 @@ class TTSDataset(Dataset):
             attention_mask[i, :8+text_ids_len+codec_ids_len] = True
         
         ref_mels = [data['ref_mel'] for data in batch]
-        ref_mels = torch.cat(ref_mels,dim=0)
+        if all(mel.shape[1] == ref_mels[0].shape[1] for mel in ref_mels):
+            ref_mels = torch.cat(ref_mels, dim=0)
 
         return {
             'input_ids':input_ids,
